@@ -4,4 +4,6 @@ type ParserPromUa(dir : string) =
       inherit AbstractParser()
       interface Iparser with
 
-            override __.Parsing() = ()
+            override __.Parsing() =
+                  __.Login()
+                  

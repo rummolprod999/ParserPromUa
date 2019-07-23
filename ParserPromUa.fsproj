@@ -12,6 +12,10 @@
         <Compile Include="Arguments.fs" />
         <Compile Include="ModuleEnvVar.fs" />
         <Compile Include="Logger.fs" />
+        <Compile Include="RegexpLibrary.fs" />
+        <Compile Include="StringExtensions.fs" />
+        <Compile Include="NewtonExtensions.fs" />
+        <Compile Include="HttpLibrary.fs" />
         <Compile Include="AppBuilder.fs" />
         <Compile Include="AbstractDocument.fs" />
         <Compile Include="AbstractParser.fs" />

@@ -15,6 +15,7 @@ module S =
         }
     let mutable argTuple = Argument.Nan
     let mutable logFile = ""
+    let mutable Token = ""
     let mutable Settings = {
         TmpP = ""
         Pref = ""

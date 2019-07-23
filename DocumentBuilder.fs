@@ -3,27 +3,27 @@ namespace PromUa
 module DocumentBuilder =
 
     type DocResult<'a> =
-        | Succ of 'a
-        | Err of string
+        | Success of 'a
+        | Error of string
 
     type DocumentBuilder() =
 
         member this.Bind(m, f) =
             match m with
-            | Err e -> Err e
-            | Succ a -> f a
+            | Error e -> Error e
+            | Success a -> f a
 
-        member this.Return(x) = Succ x
+        member this.Return(x) = Success x
 
         member this.ReturnFrom(x) = x
 
         member this.Delay(f) = f
 
-        member this.Zero() = Succ ""
+        member this.Zero() = Success ""
 
         member this.Combine(a, b) =
             match a with
-            | Succ _ -> b()
-            | Err e -> Err e
+            | Success _ -> b()
+            | Error e -> Error e
 
         member this.Run(f) = f()
