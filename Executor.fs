@@ -11,5 +11,5 @@ module Executor =
                             Environment.Exit(1)
     let parser = function
                  | PromUa d ->
-                     ()//P.parserPContr d 
+                     P.parserPromUa d 
                  | _ -> ()

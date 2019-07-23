@@ -6,11 +6,16 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="IParser.fs" />
         <Compile Include="DocumentBuilder.fs" />
         <Compile Include="Arguments.fs" />
         <Compile Include="ModuleEnvVar.fs" />
         <Compile Include="Logger.fs" />
         <Compile Include="AppBuilder.fs" />
+        <Compile Include="AbstractDocument.fs" />
+        <Compile Include="AbstractParser.fs" />
+        <Compile Include="ParserPromUa.fs" />
+        <Compile Include="StartParsing.fs" />
         <Compile Include="Executor.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
