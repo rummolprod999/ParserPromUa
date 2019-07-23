@@ -46,7 +46,7 @@ module rec Stn =
         let s = Sample.Parse(sr.ReadToEnd())
         let Prefix = s.Prefix
         let connectstring = sprintf "server=%s;port=%d;database=%s;user=%s;password=%s;CharSet=utf8;Convert Zero Datetime=True;default command timeout=3600;Connection Timeout=3600;SslMode=none" s.Server s.Port s.Database s.Userdb s.Passdb
-        let (logPath, tmpPath) = CreateDirs()
+        let (_, tmpPath) = CreateDirs()
         Settings := St ({
                          TempPath = tmpPath
                          Prefix = s.Prefix
