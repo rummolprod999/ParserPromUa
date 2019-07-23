@@ -6,6 +6,12 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="DocumentBuilder.fs" />
+        <Compile Include="Arguments.fs" />
+        <Compile Include="ModuleEnvVar.fs" />
+        <Compile Include="Logger.fs" />
+        <Compile Include="AppBuilder.fs" />
+        <Compile Include="Executor.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
 
