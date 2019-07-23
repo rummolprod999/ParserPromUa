@@ -28,7 +28,8 @@ module Download =
             request.Headers.Add("Api-Agent", "zk_integration")
             if S.Token <> "" then
                 request.Headers.Add("Acc-Token", S.Token)
-            request.Content <- new StringContent(data, Encoding.UTF8, "application/json")
+            if data <> "" then
+                request.Content <- new StringContent(data, Encoding.UTF8, "application/json")
             let task = client.SendAsync(request).Result
             let res = task.Content.ReadAsStringAsync().Result
             res
