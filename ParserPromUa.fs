@@ -70,7 +70,14 @@ type ParserPromUa(dir: string) =
                    builder {
                          let! id = item.StDString "id" <| sprintf "id not found %s" (item.ToString())
                          let! hasLots = item.StDBool "has_lots" <| sprintf "has_lots not found %s" (item.ToString())
-                         Console.WriteLine(hasLots)
+                         let status = GetStringFromJtoken item "status_text"
+                         //let publishDateT = GetDateTimeStringFromJtoken item "tendering_period.start"
+                         let! publishDate = item.StDDateTime "tendering_period.start" <| sprintf "publishDate not found %s" (item.ToString())
+                         let! endDate = item.StDDateTime "tendering_period.end" <| sprintf "endDate not found %s" (item.ToString())
+                         let! createDate = item.StDDateTime "date_created" <| sprintf "date_created not found %s" (item.ToString())
+                         let biddingDate = item.StDDateTimeB "auction_period.start"
+                         let amount = GetDecimalFromJtoken item "amount"
+                         Console.WriteLine(amount)
                          return ""
                    }
             match res with
