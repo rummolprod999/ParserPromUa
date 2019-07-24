@@ -50,7 +50,11 @@ module NewtonExt =
             match this.SelectToken(path) with
             | null -> Error err
             | x -> Success((double) x)
-            
+        
+        member this.StDBool (path : string) (err : string) =
+            match this.SelectToken(path) with
+            | null -> Error err
+            | x -> Success(Convert.ToBoolean(x))
         member this.GetElements(path : string) =
             let els = new List<JToken>()
             match this.SelectToken(path) with

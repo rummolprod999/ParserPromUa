@@ -13,6 +13,7 @@ open System.Xml
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open NewtonExt
+open DocumentBuilder
 
 type ParserPromUa(dir: string) =
       inherit AbstractParser()
@@ -57,6 +58,23 @@ type ParserPromUa(dir: string) =
 
       member private __.PrepareList(j: JObject) =
             let items = j.GetElements("..items")
-            Console.WriteLine(items.Count)
-            Console.WriteLine(j)
+            for el in items do
+                  try
+                       __.CreateDoc el
+                  with ex -> Log.logger ex
+            ()
+
+      member private __.CreateDoc(item: JToken) =
+            let builder = DocumentBuilder()
+            let res =
+                   builder {
+                         let! id = item.StDString "id" <| sprintf "id not found %s" (item.ToString())
+                         let! hasLots = item.StDBool "has_lots" <| sprintf "has_lots not found %s" (item.ToString())
+                         Console.WriteLine(hasLots)
+                         return ""
+                   }
+            match res with
+                | Success _ -> ()
+                | Error e when e = "" -> ()
+                | Error r -> Logging.Log.logger r
             ()
