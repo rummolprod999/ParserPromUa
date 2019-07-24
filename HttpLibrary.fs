@@ -17,9 +17,9 @@ module Download =
             wr.Headers.Add("Api-Agent", "zk_integration")
             wr.Headers.Add("Content-Type", "application/json")
             wr :> WebRequest
-            
-    type HttpClientPromUa(url: string, data: string)  =
-         member public __.ReturnString() : string =
+
+    type HttpClientPromUa(url: string, data: string) =
+         member public __.ReturnString(): string =
             use client = new HttpClient()
             client.Timeout <- new TimeSpan(0, 0, 60)
             let request = new HttpRequestMessage()
@@ -33,7 +33,28 @@ module Download =
             let task = client.SendAsync(request).Result
             let res = task.Content.ReadAsStringAsync().Result
             res
-            
+
+         static member DownloadSringPromUa(url: string, ?postdata: string) =
+             let dt = defaultArg postdata ""
+             let mutable s = null
+             let count = ref 0
+             let mutable continueLooping = true
+             while continueLooping do
+                 try
+                     let task = Task.Run(fun () -> (new HttpClientPromUa(url, dt)).ReturnString())
+                     if task.Wait(TimeSpan.FromSeconds(100.)) then
+                         s <- task.Result
+                         continueLooping <- false
+                     else raise <| new TimeoutException()
+                 with e ->
+                     Console.WriteLine(e)
+                     if !count >= 3 then
+                         Logging.Log.logger (sprintf "Не удалось скачать %s за %d попыток" url (!count + 1))
+                         continueLooping <- false
+                     else incr count
+                     Thread.Sleep(5000)
+             s
+
     let DownloadStringPromUa url =
         let mutable s = null
         let count = ref 0
@@ -45,30 +66,11 @@ module Download =
                     s <- task.Result
                     continueLooping <- false
                 else raise <| new TimeoutException()
-            with _ -> 
+            with _ ->
                 if !count >= 3 then
                     Logging.Log.logger (sprintf "Не удалось скачать %s за %d попыток" url !count)
                     continueLooping <- false
                 else incr count
                 Thread.Sleep(5000)
         s
-    
-    let DownloadSringPromUa url postdata =
-        let mutable s = null
-        let count = ref 0
-        let mutable continueLooping = true
-        while continueLooping do
-            try
-                let task = Task.Run(fun () -> (new HttpClientPromUa(url, postdata)).ReturnString())
-                if task.Wait(TimeSpan.FromSeconds(100.)) then
-                    s <- task.Result
-                    continueLooping <- false
-                else raise <| new TimeoutException()
-            with e ->
-                Console.WriteLine(e)
-                if !count >= 3 then
-                    Logging.Log.logger (sprintf "Не удалось скачать %s за %d попыток" url (!count+1))
-                    continueLooping <- false
-                else incr count
-                Thread.Sleep(5000)
-        s
+
