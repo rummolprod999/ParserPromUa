@@ -18,13 +18,16 @@ module Download =
             wr.Headers.Add("Content-Type", "application/json")
             wr :> WebRequest
 
-    type HttpClientPromUa(url: string, data: string) =
+    type HttpClientPromUa(url: string, data: string, typereq: string) =
          member public __.ReturnString(): string =
             use client = new HttpClient()
             client.Timeout <- new TimeSpan(0, 0, 60)
             let request = new HttpRequestMessage()
             request.RequestUri <- new Uri(url)
-            request.Method <- HttpMethod.Post
+            match typereq with
+            | "post" -> request.Method <- HttpMethod.Post
+            | _ -> request.Method <- HttpMethod.Get
+            
             request.Headers.Add("Api-Agent", "zk_integration")
             if S.Token <> "" then
                 request.Headers.Add("Acc-Token", S.Token)
@@ -34,14 +37,15 @@ module Download =
             let res = task.Content.ReadAsStringAsync().Result
             res
 
-         static member DownloadSringPromUa(url: string, ?postdata: string) =
+         static member DownloadSringPromUa(url: string, ?postdata: string, ?typereq: string) =
              let dt = defaultArg postdata ""
+             let pst = defaultArg typereq "get"
              let mutable s = null
              let count = ref 0
              let mutable continueLooping = true
              while continueLooping do
                  try
-                     let task = Task.Run(fun () -> (new HttpClientPromUa(url, dt)).ReturnString())
+                     let task = Task.Run(fun () -> (new HttpClientPromUa(url, dt, pst)).ReturnString())
                      if task.Wait(TimeSpan.FromSeconds(100.)) then
                          s <- task.Result
                          continueLooping <- false
