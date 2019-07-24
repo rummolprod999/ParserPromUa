@@ -29,10 +29,12 @@ type ParserPromUa(dir : string) =
           let dtn = DateTime.Now
           let dateNow = String.Format("{0:dd.MM.yyyy}", dtn.AddDays(1.))
           let dateNowMinusAfewDays = String.Format("{0:dd.MM.yyyy}", dtn.AddDays(-2.))
-          let url = String.Format("{0}{1}{2}{3}{4}{5}", AbstractParser.EndPoint, "/remote/api/v2/entity?search=search_query&", "range_date_created_dt_start=", dateNow, "&range_date_created_dt_end=", dateNowMinusAfewDays)
-          let url = "https://my.zakupki.prom.ua/remote/api/v2/entity?search=search_query&range_date_created_dt_start=21.07.2019&range_date_created_dt_end=23.07.2019"
+          let url = String.Format("{0}{1}{2}{3}{4}{5}", AbstractParser.EndPoint, "/remote/api/v2/entity?", "range_date_created_dt_start=", dateNowMinusAfewDays, "&range_date_created_dt_end=", dateNow)
+          //let url = "https://my.zakupki.prom.ua/remote/api/v2/entity?range_date_created_dt_start=21.07.2019&range_date_created_dt_end=23.07.2019"
           let res = HttpClientPromUa.DownloadSringPromUa(url)
-          Console.WriteLine(res)
           let j = JObject.Parse(res)
+          match GetStringFromJtoken j "status" with
+          | "ok" -> ()
+          | _ -> failwith <| j.ToString()
           Console.WriteLine(j)
           ()

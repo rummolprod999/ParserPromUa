@@ -1,4 +1,5 @@
 namespace PromUa
+open Logging
 open System
 
 module Executor =
@@ -11,5 +12,7 @@ module Executor =
                             Environment.Exit(1)
     let parser = function
                  | PromUa d ->
-                     P.parserPromUa d 
+                     try
+                        P.parserPromUa d
+                     with e -> Log.logger e
                  | _ -> ()
