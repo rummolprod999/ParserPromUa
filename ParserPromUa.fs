@@ -77,11 +77,15 @@ type ParserPromUa(dir: string) =
                          let! createDate = item.StDDateTime "date_created" <| sprintf "date_created not found %s" (item.ToString())
                          let biddingDate = item.StDDateTimeB "auction_period.start"
                          let amount = GetDecimalFromJtoken item "amount"
-                         Console.WriteLine(amount)
+                         let descr = GetStringFromJtoken item "descr"
+                         let! purObj = item.StDString "title" <| sprintf "title not found %s" (item.ToString())
+                         let orgName = GetStringFromJtoken item "merchant_name"
+                         let currency = GetStringFromJtoken item "currency_iso_code"
+                         Console.WriteLine(orgName)
                          return ""
                    }
             match res with
                 | Success _ -> ()
                 | Error e when e = "" -> ()
-                | Error r -> Logging.Log.logger r
+                | Error r -> Logging.Log.logger (r, item.ToString())
             ()
