@@ -74,7 +74,7 @@ type ParserPromUa(dir: string) =
                          let doc  = DocumentPromUa(id, hasLots, status, publishDate, endDate, createDate, biddingDate, amount, descr, purObj, orgName, currency)
                          try
                                doc.WorkerEntity()
-                         with e -> Log.logger e
+                         with e -> Log.logger(e, item.ToString())
                          return ""
                    }
             match res with

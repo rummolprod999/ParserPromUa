@@ -1,5 +1,15 @@
 namespace PromUa
+
 open System
+open DocumentBuilder
+open MySql.Data.MySqlClient
+open System
+open System.Data
+open S
+open Download
+open Logging
+open Newtonsoft.Json.Linq
+open NewtonExt
 
 type DocumentPromUa() =
 
@@ -34,4 +44,39 @@ type DocumentPromUa() =
                                                                                                                                        this.purObj <- purObj
                                                                                                                                        this.orgName <- orgName
                                                                                                                                        this.currency <- currency
-      member __.WorkerEntity() = ()
+      member __.WorkerEntity() =
+            let builder = DocumentBuilder()
+            use con = new MySqlConnection(Settings.ConS)
+            let res =
+                       builder {
+                            con.Open()
+                            let selectTend = sprintf "SELECT id_tender FROM %stender WHERE purchase_number = @purchase_number AND type_fz = @type_fz AND end_date = @end_date AND notice_version = @notice_version, AND doc_publish_date = @doc_publish_date AND date_version = @date_version" Settings.Pref
+                            let cmd: MySqlCommand = new MySqlCommand(selectTend, con)
+                            cmd.Prepare()
+                            cmd.Parameters.AddWithValue("@purchase_number", __.id) |> ignore
+                            cmd.Parameters.AddWithValue("@type_fz", __.typeFz) |> ignore
+                            cmd.Parameters.AddWithValue("@end_date", __.endDate) |> ignore
+                            cmd.Parameters.AddWithValue("@notice_version", __.status) |> ignore
+                            cmd.Parameters.AddWithValue("@doc_publish_date", __.publishDate) |> ignore
+                            cmd.Parameters.AddWithValue("@date_version", __.createDate) |> ignore
+                            let reader: MySqlDataReader = cmd.ExecuteReader()
+                            if reader.HasRows then reader.Close()
+                                                   return! Error ""
+                            reader.Close()
+                            let o = __.ReturnPageTender()
+                            Console.WriteLine(o.ToString())
+                            return ""
+                            }
+            match res with
+                | Success _ -> ()
+                | Error e when e = "" -> ()
+                | Error r -> Logging.Log.logger r
+      
+      member private __.ReturnPageTender(): JObject =
+          let url = sprintf "%s/remote/api/v2/entity/%s" AbstractParser.EndPoint __.id
+          let res = HttpClientPromUa.DownloadSringPromUa(url)
+          let j = JObject.Parse(res)
+          match GetStringFromJtoken j "status" with
+          | "ok" -> j
+          | _ -> failwith <| j.ToString()
+          
