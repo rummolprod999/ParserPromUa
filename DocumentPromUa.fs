@@ -137,6 +137,36 @@ type DocumentPromUa() =
                             | false -> AbstractDocument.Add <- AbstractDocument.Add + 1
                             let documents = item.GetElements("data.documents.tender")
                             __.AddDocs con !idTender documents
+                            let idCustomer = ref 0
+                            if __.orgName <> "" then
+                                let selectCustomer =
+                                    sprintf "SELECT id_customer FROM %scustomer WHERE full_name = @full_name" S.Settings.Pref
+                                let cmd3 = new MySqlCommand(selectCustomer, con)
+                                cmd3.Prepare()
+                                cmd3.Parameters.AddWithValue("@full_name", __.orgName) |> ignore
+                                let reader = cmd3.ExecuteReader()
+                                match reader.HasRows with
+                                | true ->
+                                    reader.Read() |> ignore
+                                    idCustomer := reader.GetInt32("id_customer")
+                                    reader.Close()
+                                | false ->
+                                    reader.Close()
+                                    let insertCustomer =
+                                        sprintf "INSERT INTO %scustomer SET reg_num = @reg_num, full_name = @full_name, inn = @inn"
+                                            S.Settings.Pref
+                                    let RegNum = Guid.NewGuid().ToString()
+                                    let inn = GetStringFromJtoken item "data.procuring_entity.srn"
+                                    let cmd14 = new MySqlCommand(insertCustomer, con)
+                                    cmd14.Prepare()
+                                    cmd14.Parameters.AddWithValue("@reg_num", RegNum) |> ignore
+                                    cmd14.Parameters.AddWithValue("@full_name", __.orgName) |> ignore
+                                    cmd14.Parameters.AddWithValue("@inn", inn) |> ignore
+                                    cmd14.ExecuteNonQuery() |> ignore
+                                    idCustomer := int cmd14.LastInsertedId
+                            match __.hasLots with
+                            | false -> __.AddLots(con, !idTender, item, !idCustomer)
+                            | true -> __.AddLotsExtends(con, !idTender, item, !idCustomer)
                             __.AddVerNumber con __.id S.Settings
                             __.TenderKwords con (!idTender) S.Settings
                             return ""
@@ -153,11 +183,19 @@ type DocumentPromUa() =
           match GetStringFromJtoken j "status" with
           | "ok" -> j
           | _ -> failwith <| j.ToString()
-
+      
+      member private __.ReturnPageLot(idLot: string): JObject =
+          let url = sprintf "%s/remote/api/v2/entity/%s/lot/%s" AbstractParser.EndPoint __.id idLot
+          let res = HttpClientPromUa.DownloadSringPromUa(url)
+          let j = JObject.Parse(res)
+          match GetStringFromJtoken j "status" with
+          | "ok" -> j
+          | _ -> failwith <| j.ToString()
+          
       member private __.AddDocs (con: MySqlConnection) (idTender: int) (items: List<JToken>) =
           for doc in items do
               let docName = GetStringFromJtoken doc "title"
-              let url = GetStringFromJtoken doc "title"
+              let url = GetStringFromJtoken doc "url"
               let description = GetStringFromJtoken doc "descr"
               if docName <> "" || url <> "" then
                   let addAttach = sprintf "INSERT INTO %sattachment SET id_tender = @id_tender, file_name = @file_name, url = @url, description = @description" S.Settings.Pref
@@ -167,4 +205,74 @@ type DocumentPromUa() =
                   cmd5.Parameters.AddWithValue("@url", url) |> ignore
                   cmd5.Parameters.AddWithValue("@description", description) |> ignore
                   cmd5.ExecuteNonQuery() |> ignore
+          ()
+
+      member private __.AddLots(con: MySqlConnection, idTender: int, item: JObject, idCustomer: int) =
+            let idLot = ref 0
+            let insertLot = sprintf "INSERT INTO %slot SET id_tender = @id_tender, lot_number = @lot_number, max_price = @max_price, currency = @currency" S.Settings.Pref
+            let cmd12 = new MySqlCommand(insertLot, con)
+            cmd12.Parameters.AddWithValue("@id_tender", idTender) |> ignore
+            cmd12.Parameters.AddWithValue("@lot_number", 1) |> ignore
+            cmd12.Parameters.AddWithValue("@max_price", __.amount) |> ignore
+            cmd12.Parameters.AddWithValue("@currency", __.currency) |> ignore
+            cmd12.ExecuteNonQuery() |> ignore
+            idLot := int cmd12.LastInsertedId
+            let products = item.GetElements("data.items")
+            for p in products do
+                let poName1 = GetStringFromJtoken p "primary_classifier.name_with_code"
+                let poName2 = GetStringFromJtoken p "descr"
+                let poName = match (poName1, poName2) with
+                             | (x, "") -> x
+                             | (x, y) -> sprintf "%s %s" x y
+                let quant = GetDecimalFromJtoken p "quantity"
+                let okei = GetStringFromJtoken p "unit_name"
+                let okpd2 = GetStringFromJtoken p "primary_classifier.code"
+                let insertLotitem = sprintf "INSERT INTO %spurchase_object SET id_lot = @id_lot, id_customer = @id_customer, name = @name, sum = @sum, price = @price, quantity_value = @quantity_value, customer_quantity_value = @customer_quantity_value, okei = @okei, okpd2_code = @okpd2_code" S.Settings.Pref
+                let cmd19 = new MySqlCommand(insertLotitem, con)
+                cmd19.Prepare()
+                cmd19.Parameters.AddWithValue("@id_lot", !idLot) |> ignore
+                cmd19.Parameters.AddWithValue("@id_customer", idCustomer) |> ignore
+                cmd19.Parameters.AddWithValue("@name", poName) |> ignore
+                cmd19.Parameters.AddWithValue("@sum", "") |> ignore
+                cmd19.Parameters.AddWithValue("@price", "") |> ignore
+                cmd19.Parameters.AddWithValue("@quantity_value", quant) |> ignore
+                cmd19.Parameters.AddWithValue("@customer_quantity_value", quant) |> ignore
+                cmd19.Parameters.AddWithValue("@okei", okei) |> ignore
+                cmd19.Parameters.AddWithValue("@okpd2_code", okpd2) |> ignore
+                cmd19.ExecuteNonQuery() |> ignore
+                let delivPlace1 = GetStringFromJtoken p "delivery_address.locality"
+                let delivPlace2 = GetStringFromJtoken p "delivery_address.region"
+                let delivPlace3 = GetStringFromJtoken p "delivery_address.country_name"
+                let delivPlace4 = GetStringFromJtoken p "delivery_address.street_address"
+                let delivPlace = sprintf "%s %s %s %s" delivPlace1 delivPlace2 delivPlace3 delivPlace4
+                let delivStart = p.StDDateTimeB "delivery_period.start"
+                let delivEnd = p.StDDateTimeB "delivery_period.end"
+                let delivTerm = sprintf "Start Delivery: %O End Delivery: %O" delivStart delivEnd
+                if delivPlace <> "" || delivTerm <> "" then
+                    let insertCustomerRequirement =
+                        sprintf "INSERT INTO %scustomer_requirement SET id_lot = @id_lot, id_customer = @id_customer, delivery_place = @delivery_place, application_guarantee_amount = @application_guarantee_amount, contract_guarantee_amount = @contract_guarantee_amount, delivery_term = @delivery_term" S.Settings.Pref
+                    let cmd16 = new MySqlCommand(insertCustomerRequirement, con)
+                    cmd16.Prepare()
+                    cmd16.Parameters.AddWithValue("@id_lot", !idLot) |> ignore
+                    cmd16.Parameters.AddWithValue("@id_customer", idCustomer) |> ignore
+                    cmd16.Parameters.AddWithValue("@delivery_place", delivPlace) |> ignore
+                    cmd16.Parameters.AddWithValue("@application_guarantee_amount", "") |> ignore
+                    cmd16.Parameters.AddWithValue("@contract_guarantee_amount", "") |> ignore
+                    cmd16.Parameters.AddWithValue("@delivery_term", delivTerm) |> ignore
+                    cmd16.ExecuteNonQuery() |> ignore
+                ()
+            ()
+      
+      member private __.AddLotsExtends(con: MySqlConnection, idTender: int, item: JObject, idCustomer: int) =
+          let lots = item.GetElements("data.lots")
+          for l in lots do
+              let lotId = GetStringFromJtoken l "id"
+              try
+                  let lo = __.ReturnPageLot(lotId)
+                  __.Lot(con, idTender, lo, idCustomer)
+                  ()
+              with ex -> Log.logger ex
+          ()
+      
+      member private __.Lot(con: MySqlConnection, idTender: int, item: JObject, idCustomer: int) =
           ()

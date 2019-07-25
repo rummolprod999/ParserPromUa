@@ -27,5 +27,5 @@ type AbstractParser() =
             Log.logger j
             Environment.Exit(1)
         S.Token <- token
-        //Console.WriteLine(token)
+        Console.WriteLine(token)
         ()
