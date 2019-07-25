@@ -50,7 +50,7 @@ type DocumentPromUa() =
             let res =
                        builder {
                             con.Open()
-                            let selectTend = sprintf "SELECT id_tender FROM %stender WHERE purchase_number = @purchase_number AND type_fz = @type_fz AND end_date = @end_date AND notice_version = @notice_version, AND doc_publish_date = @doc_publish_date AND date_version = @date_version" Settings.Pref
+                            let selectTend = sprintf "SELECT id_tender FROM %stender WHERE purchase_number = @purchase_number AND type_fz = @type_fz AND end_date = @end_date AND notice_version = @notice_version AND doc_publish_date = @doc_publish_date AND date_version = @date_version" Settings.Pref
                             let cmd: MySqlCommand = new MySqlCommand(selectTend, con)
                             cmd.Prepare()
                             cmd.Parameters.AddWithValue("@purchase_number", __.id) |> ignore
