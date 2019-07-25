@@ -27,3 +27,8 @@ module DocumentBuilder =
             | Error e -> Error e
 
         member this.Run(f) = f()
+        
+        member this.TryWith(body, handler) =
+            try
+                body()
+            with e -> handler e

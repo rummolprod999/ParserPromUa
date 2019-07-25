@@ -1,7 +1,7 @@
 namespace PromUa
 open System
 
-type DocumentPcontr223() =
+type DocumentPromUa() =
 
       [<DefaultValue>] val mutable id: string
       [<DefaultValue>] val mutable hasLots: bool
@@ -20,7 +20,7 @@ type DocumentPcontr223() =
         override __.Worker() =
             __.WorkerEntity()
 
-      new(id, hasLots, status, publishDate, endDate, createDate, biddingDate, amount, descr, purObj, orgName, currency) as this = DocumentPcontr223()
+      new(id, hasLots, status, publishDate, endDate, createDate, biddingDate, amount, descr, purObj, orgName, currency) as this = DocumentPromUa()
                                                                                                                                   then this.id <- id
                                                                                                                                        this.hasLots <- hasLots
                                                                                                                                        this.status <- status

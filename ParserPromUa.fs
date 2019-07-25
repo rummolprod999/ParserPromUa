@@ -61,7 +61,7 @@ type ParserPromUa(dir: string) =
             for el in items do
                   try
                        __.CreateDoc el
-                  with ex -> Log.logger ex
+                  with ex -> Log.logger (ex, j.ToString())
             ()
 
       member private __.CreateDoc(item: JToken) =
@@ -71,7 +71,6 @@ type ParserPromUa(dir: string) =
                          let! id = item.StDString "id" <| sprintf "id not found %s" (item.ToString())
                          let! hasLots = item.StDBool "has_lots" <| sprintf "has_lots not found %s" (item.ToString())
                          let status = GetStringFromJtoken item "status_text"
-                         //let publishDateT = GetDateTimeStringFromJtoken item "tendering_period.start"
                          let! publishDate = item.StDDateTime "tendering_period.start" <| sprintf "publishDate not found %s" (item.ToString())
                          let! endDate = item.StDDateTime "tendering_period.end" <| sprintf "endDate not found %s" (item.ToString())
                          let! createDate = item.StDDateTime "date_created" <| sprintf "date_created not found %s" (item.ToString())
@@ -81,7 +80,10 @@ type ParserPromUa(dir: string) =
                          let! purObj = item.StDString "title" <| sprintf "title not found %s" (item.ToString())
                          let orgName = GetStringFromJtoken item "merchant_name"
                          let currency = GetStringFromJtoken item "currency_iso_code"
-                         Console.WriteLine(orgName)
+                         let doc  = DocumentPromUa(id, hasLots, status, publishDate, endDate, createDate, biddingDate, amount, descr, purObj, orgName, currency)
+                         try
+                               doc.WorkerEntity()
+                         with e -> Log.logger e
                          return ""
                    }
             match res with
