@@ -10,6 +10,7 @@ open Download
 open Logging
 open Newtonsoft.Json.Linq
 open NewtonExt
+open System.Collections.Generic
 
 type DocumentPromUa() =
 
@@ -134,7 +135,8 @@ type DocumentPromUa() =
                             match updated with
                             | true -> AbstractDocument.Upd <- AbstractDocument.Upd + 1
                             | false -> AbstractDocument.Add <- AbstractDocument.Add + 1
-                            
+                            let documents = item.GetElements("data.documents.tender")
+                            __.AddDocs con !idTender documents
                             return ""
                             }
             match res with
@@ -149,4 +151,18 @@ type DocumentPromUa() =
           match GetStringFromJtoken j "status" with
           | "ok" -> j
           | _ -> failwith <| j.ToString()
-          
+      
+      member private __.AddDocs (con : MySqlConnection) (idTender : int) (items: List<JToken>) =
+          for doc in items do
+              let docName = GetStringFromJtoken doc "title"
+              let url = GetStringFromJtoken doc "title"
+              let description = GetStringFromJtoken doc "descr"
+              if docName <> "" || url <> "" then
+                  let addAttach = sprintf "INSERT INTO %sattachment SET id_tender = @id_tender, file_name = @file_name, url = @url, description = @description" S.Settings.Pref
+                  let cmd5 = new MySqlCommand(addAttach, con)
+                  cmd5.Parameters.AddWithValue("@id_tender", idTender) |> ignore
+                  cmd5.Parameters.AddWithValue("@file_name", docName) |> ignore
+                  cmd5.Parameters.AddWithValue("@url", url) |> ignore
+                  cmd5.Parameters.AddWithValue("@description", description) |> ignore
+                  cmd5.ExecuteNonQuery() |> ignore
+          ()
