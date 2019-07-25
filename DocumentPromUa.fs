@@ -63,8 +63,78 @@ type DocumentPromUa() =
                             if reader.HasRows then reader.Close()
                                                    return! Error ""
                             reader.Close()
-                            let o = __.ReturnPageTender()
-                            Console.WriteLine(o.ToString())
+                            let item = __.ReturnPageTender()
+                            let tendOrigNum = GetStringFromJtoken item "data.tuid"
+                            let (cancelStatus, updated) = __.SetCancelStatus(con, __.createDate, __.id)
+                            let printForm = GetStringFromJtoken item "data.public_link_tender"
+                            let idEtp = __.GetEtp con S.Settings
+                            let pwName = GetStringFromJtoken item "data.method_type_text"
+                            let numVersion = 1
+                            let idPlacingWay = ref 0
+                            if pwName <> "" then idPlacingWay := __.GetPlacingWay con pwName S.Settings
+                            let IdOrg = ref 0
+                            if __.orgName <> "" then
+                                let selectOrg = sprintf "SELECT id_organizer FROM %sorganizer WHERE full_name = @full_name" S.Settings.Pref
+                                let cmd3 = new MySqlCommand(selectOrg, con)
+                                cmd3.Prepare()
+                                cmd3.Parameters.AddWithValue("@full_name", __.orgName) |> ignore
+                                let reader = cmd3.ExecuteReader()
+                                match reader.HasRows with
+                                | true ->
+                                    reader.Read() |> ignore
+                                    IdOrg := reader.GetInt32("id_organizer")
+                                    reader.Close()
+                                | false ->
+                                    reader.Close()
+                                    let addOrganizer = sprintf "INSERT INTO %sorganizer SET full_name = @full_name, contact_person = @contact_person, post_address = @post_address, fact_address = @fact_address, contact_phone = @contact_phone, inn = @inn, contact_email = @contact_email" S.Settings.Pref
+                                    let contactPerson = GetStringFromJtoken item "data.procuring_entity.contacts.main.name"
+                                    let postAddress = GetStringFromJtoken item "data.procuring_entity.address"
+                                    let factAddress = ""
+                                    let phone = GetStringFromJtoken item "data.procuring_entity.contacts.main.phones[0]"
+                                    let inn = GetStringFromJtoken item "data.procuring_entity.srn"
+                                    let email = GetStringFromJtoken item "data.procuring_entity.contacts.main.email"
+                                    let cmd5 = new MySqlCommand(addOrganizer, con)
+                                    cmd5.Parameters.AddWithValue("@full_name", __.orgName) |> ignore
+                                    cmd5.Parameters.AddWithValue("@contact_person", contactPerson) |> ignore
+                                    cmd5.Parameters.AddWithValue("@post_address", postAddress) |> ignore
+                                    cmd5.Parameters.AddWithValue("@fact_address", factAddress) |> ignore
+                                    cmd5.Parameters.AddWithValue("@contact_phone", phone) |> ignore
+                                    cmd5.Parameters.AddWithValue("@inn", inn) |> ignore
+                                    cmd5.Parameters.AddWithValue("@contact_email", email) |> ignore
+                                    cmd5.ExecuteNonQuery() |> ignore
+                                    IdOrg := int cmd5.LastInsertedId
+                                    ()
+                            let idTender = ref 0
+                            let insertTender = String.Format ("INSERT INTO {0}tender SET id_xml = @id_xml, purchase_number = @purchase_number, doc_publish_date = @doc_publish_date, href = @href, purchase_object_info = @purchase_object_info, type_fz = @type_fz, id_organizer = @id_organizer, id_placing_way = @id_placing_way, id_etp = @id_etp, end_date = @end_date, scoring_date = @scoring_date, bidding_date = @bidding_date, cancel = @cancel, date_version = @date_version, num_version = @num_version, notice_version = @notice_version, xml = @xml, print_form = @print_form, id_region = @id_region, extend_scoring_date = @extend_scoring_date, extend_bidding_date = @extend_bidding_date", S.Settings.Pref)
+                            let cmd9 = new MySqlCommand(insertTender, con)
+                            cmd9.Prepare()
+                            cmd9.Parameters.AddWithValue("@id_xml", __.id) |> ignore
+                            cmd9.Parameters.AddWithValue("@purchase_number", __.id) |> ignore
+                            cmd9.Parameters.AddWithValue("@doc_publish_date", __.publishDate) |> ignore
+                            cmd9.Parameters.AddWithValue("@href", printForm) |> ignore
+                            cmd9.Parameters.AddWithValue("@purchase_object_info", __.purObj) |> ignore
+                            cmd9.Parameters.AddWithValue("@type_fz", __.typeFz) |> ignore
+                            cmd9.Parameters.AddWithValue("@id_organizer", !IdOrg) |> ignore
+                            cmd9.Parameters.AddWithValue("@id_placing_way", !idPlacingWay) |> ignore
+                            cmd9.Parameters.AddWithValue("@id_etp", idEtp) |> ignore
+                            cmd9.Parameters.AddWithValue("@end_date", __.endDate) |> ignore
+                            cmd9.Parameters.AddWithValue("@scoring_date", DateTime.MinValue) |> ignore
+                            cmd9.Parameters.AddWithValue("@bidding_date", __.biddingDate) |> ignore
+                            cmd9.Parameters.AddWithValue("@cancel", cancelStatus) |> ignore
+                            cmd9.Parameters.AddWithValue("@date_version", __.createDate) |> ignore
+                            cmd9.Parameters.AddWithValue("@num_version", numVersion) |> ignore
+                            cmd9.Parameters.AddWithValue("@notice_version", __.status) |> ignore
+                            cmd9.Parameters.AddWithValue("@xml", printForm) |> ignore
+                            cmd9.Parameters.AddWithValue("@print_form", printForm) |> ignore
+                            cmd9.Parameters.AddWithValue("@extend_scoring_date", tendOrigNum) |> ignore
+                            cmd9.Parameters.AddWithValue("@extend_bidding_date", __.descr) |> ignore
+                            cmd9.Parameters.AddWithValue("@id_region", 0) |> ignore
+                            cmd9.ExecuteNonQuery() |> ignore
+                            idTender := int cmd9.LastInsertedId
+                            match updated with
+                            | true -> AbstractDocument.Upd <- AbstractDocument.Upd + 1
+                            | false -> AbstractDocument.Add <- AbstractDocument.Add + 1
+                            
                             return ""
                             }
             match res with

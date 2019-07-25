@@ -5,6 +5,7 @@ open MySql.Data.MySqlClient
 open System.Data
 open System.Text
 open System.Text.RegularExpressions
+open System
 
 [<AbstractClass>]
 type AbstractDocument() =
@@ -157,7 +158,7 @@ type AbstractDocument() =
                 resString.Append(sprintf " %s" attName) |> ignore
         let idOrg = ref 0
         let selectPurInf =
-            sprintf "SELECT purchase_object_info, id_organizer FROM %stender WHERE id_tender = @id_tender" stn.Pref
+            sprintf "SELECT purchase_object_info, id_organizer, extend_scoring_date, extend_bidding_date FROM %stender WHERE id_tender = @id_tender" stn.Pref
         let cmd3 = new MySqlCommand(selectPurInf, con)
         cmd3.Prepare()
         cmd3.Parameters.AddWithValue("@id_tender", idTender) |> ignore
@@ -171,10 +172,18 @@ type AbstractDocument() =
                     match row.IsNull("purchase_object_info") with
                     | true -> ""
                     | false -> string <| row.["purchase_object_info"]
+                let extScor =
+                    match row.IsNull("extend_scoring_date") with
+                    | true -> ""
+                    | false -> string <| row.["extend_scoring_date"]
+                let extBind =
+                    match row.IsNull("extend_bidding_date") with
+                    | true -> ""
+                    | false -> string <| row.["extend_bidding_date"]
                 idOrg := match row.IsNull("id_organizer") with
                          | true -> 0
                          | false -> row.["id_organizer"] :?> int
-                resString.Append(sprintf " %s" purOb) |> ignore
+                resString.Append(sprintf " %s %s %s" purOb extScor extBind) |> ignore
         match (!idOrg) <> 0 with
         | true ->
             let selectOrg =
@@ -236,3 +245,26 @@ type AbstractDocument() =
         let res = cmd5.ExecuteNonQuery()
         if res <> 1 then Logging.Log.logger ("Не удалось обновить tender_kwords", idTender)
         ()
+    
+    member internal __.SetCancelStatus(con: MySqlConnection, dateUpd: DateTime, purNum: string) =
+        let mutable cancelStatus = 0
+        let mutable updated = false
+        let selectDateT = sprintf "SELECT id_tender, date_version, cancel FROM %stender WHERE purchase_number = @purchase_number AND type_fz = @type_fz" S.Settings.Pref
+        let cmd2 = new MySqlCommand(selectDateT, con)
+        cmd2.Prepare()
+        cmd2.Parameters.AddWithValue("@purchase_number", purNum) |> ignore
+        cmd2.Parameters.AddWithValue("@type_fz", __.typeFz) |> ignore
+        let adapter = new MySqlDataAdapter()
+        adapter.SelectCommand <- cmd2
+        let dt = new DataTable()
+        adapter.Fill(dt) |> ignore
+        for row in dt.Rows do
+            updated <- true
+            match dateUpd >= ((row.["date_version"]) :?> DateTime) with
+            | true -> row.["cancel"] <- 1
+            | false -> cancelStatus <- 1
+
+        let commandBuilder = new MySqlCommandBuilder(adapter)
+        commandBuilder.ConflictOption <- ConflictOption.OverwriteChanges
+        adapter.Update(dt) |> ignore
+        (cancelStatus, updated)

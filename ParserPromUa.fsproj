@@ -34,6 +34,7 @@
 
     <ItemGroup>
       <Content Include="list.json" />
+      <Content Include="tender.json" />
     </ItemGroup>
 
 </Project>
