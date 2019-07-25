@@ -137,6 +137,8 @@ type DocumentPromUa() =
                             | false -> AbstractDocument.Add <- AbstractDocument.Add + 1
                             let documents = item.GetElements("data.documents.tender")
                             __.AddDocs con !idTender documents
+                            __.AddVerNumber con __.id S.Settings
+                            __.TenderKwords con (!idTender) S.Settings
                             return ""
                             }
             match res with
