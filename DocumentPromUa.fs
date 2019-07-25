@@ -15,7 +15,7 @@ type DocumentPromUa() =
       [<DefaultValue>] val mutable purObj: string
       [<DefaultValue>] val mutable orgName: string
       [<DefaultValue>] val mutable currency: string
-      inherit AbstractDocument()
+      inherit AbstractDocument("Zakupki.Prom.ua", AbstractParser.EndPoint, 204)
       interface IDocument with
         override __.Worker() =
             __.WorkerEntity()
@@ -24,8 +24,9 @@ type DocumentPromUa() =
                                                                                                                                   then this.id <- id
                                                                                                                                        this.hasLots <- hasLots
                                                                                                                                        this.status <- status
-                                                                                                                                       this.publishDate <- publishDate
-                                                                                                                                       this.endDate <- endDate
+                                                                                                                                       if publishDate = DateTime.MinValue then this.publishDate <- createDate else this.publishDate <- publishDate
+                                                                                                                                       if endDate = DateTime.MinValue then this.endDate <- createDate else this.endDate <- endDate
+
                                                                                                                                        this.createDate <- createDate
                                                                                                                                        this.biddingDate <- biddingDate
                                                                                                                                        this.amount <- amount

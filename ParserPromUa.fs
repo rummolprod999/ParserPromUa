@@ -2,15 +2,6 @@ namespace PromUa
 open System
 open Download
 open Logging
-open System
-open Microsoft.FSharp.Data
-open System.Linq
-open System.Collections.Generic
-open System.IO
-open System.Linq
-open System.Text
-open System.Xml
-open Newtonsoft.Json
 open Newtonsoft.Json.Linq
 open NewtonExt
 open DocumentBuilder
@@ -61,7 +52,7 @@ type ParserPromUa(dir: string) =
             for el in items do
                   try
                        __.CreateDoc el
-                  with ex -> Log.logger (ex, j.ToString())
+                  with ex -> Log.logger (ex, el.ToString())
             ()
 
       member private __.CreateDoc(item: JToken) =
@@ -71,8 +62,8 @@ type ParserPromUa(dir: string) =
                          let! id = item.StDString "id" <| sprintf "id not found %s" (item.ToString())
                          let! hasLots = item.StDBool "has_lots" <| sprintf "has_lots not found %s" (item.ToString())
                          let status = GetStringFromJtoken item "status_text"
-                         let! publishDate = item.StDDateTime "tendering_period.start" <| sprintf "publishDate not found %s" (item.ToString())
-                         let! endDate = item.StDDateTime "tendering_period.end" <| sprintf "endDate not found %s" (item.ToString())
+                         let publishDate = item.StDDateTimeB "tendering_period.start"
+                         let endDate = item.StDDateTimeB "tendering_period.end"
                          let! createDate = item.StDDateTime "date_created" <| sprintf "date_created not found %s" (item.ToString())
                          let biddingDate = item.StDDateTimeB "auction_period.start"
                          let amount = GetDecimalFromJtoken item "amount"

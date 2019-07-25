@@ -27,6 +27,7 @@ module NewtonExt =
     let inline GetDateTimeFromJtoken (x: ^a) (s: string) =
             match (^a: (member SelectToken: string -> JToken) (x, s)) with
             | null -> DateTime.MinValue
+            | x when x.Type = JTokenType.Null -> DateTime.MinValue
             | r -> DateTime.Parse((string) r)
 
     let inline GetDateTimeStringFromJtoken (x: ^a) (s: string) =
