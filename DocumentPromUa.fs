@@ -143,7 +143,7 @@ type DocumentPromUa() =
                 | Success _ -> ()
                 | Error e when e = "" -> ()
                 | Error r -> Logging.Log.logger r
-      
+
       member private __.ReturnPageTender(): JObject =
           let url = sprintf "%s/remote/api/v2/entity/%s" AbstractParser.EndPoint __.id
           let res = HttpClientPromUa.DownloadSringPromUa(url)
@@ -151,8 +151,8 @@ type DocumentPromUa() =
           match GetStringFromJtoken j "status" with
           | "ok" -> j
           | _ -> failwith <| j.ToString()
-      
-      member private __.AddDocs (con : MySqlConnection) (idTender : int) (items: List<JToken>) =
+
+      member private __.AddDocs (con: MySqlConnection) (idTender: int) (items: List<JToken>) =
           for doc in items do
               let docName = GetStringFromJtoken doc "title"
               let url = GetStringFromJtoken doc "title"
