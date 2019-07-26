@@ -1,5 +1,6 @@
 namespace PromUa
 
+open Logging
 open System
 open System.IO
 open System.Net
@@ -9,6 +10,9 @@ open System.Threading
 open System.Threading.Tasks
 
 module Download =
+    
+    exception EmptyString of string
+    
     type TimedWebClientPromUa() =
         inherit WebClient()
         override this.GetWebRequest(address: Uri) =
@@ -35,6 +39,7 @@ module Download =
                 request.Content <- new StringContent(data, Encoding.UTF8, "application/json")
             let task = client.SendAsync(request).Result
             let res = task.Content.ReadAsStringAsync().Result
+            if res = "" then raise (EmptyString(sprintf "empty string at url %s" url))
             res
 
          static member DownloadSringPromUa(url: string, ?postdata: string, ?typereq: string) =
@@ -51,9 +56,10 @@ module Download =
                          continueLooping <- false
                      else raise <| new TimeoutException()
                  with e ->
-                     Console.WriteLine(e)
-                     if !count >= 3 then
+                     //Console.WriteLine(e)
+                     if !count >= 10 then
                          Logging.Log.logger (sprintf "Не удалось скачать %s за %d попыток" url (!count + 1))
+                         Log.logger e
                          continueLooping <- false
                      else incr count
                      Thread.Sleep(5000)

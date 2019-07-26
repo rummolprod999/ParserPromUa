@@ -37,13 +37,14 @@ type ParserPromUa(dir: string) =
             let totalItems = GetIntFromJtoken j "data.total_items"
             if totalItems = 0 then failwith "totalItems is zero"
             let maxpage = totalItems / 20 + 1
+            let mutable res = ""
             for i in 2..maxpage do
                   try
                         let url = sprintf "%s&page=%d" startUrl i
-                        let res = HttpClientPromUa.DownloadSringPromUa(url)
+                        res <- HttpClientPromUa.DownloadSringPromUa(url)
                         let t = JObject.Parse(res)
                         __.PrepareList(t)
-                  with e -> Log.logger e
+                  with e -> Log.logger (e, "input string is - ", res)
             ()
 
 
