@@ -38,6 +38,7 @@ module Download =
             if data <> "" then
                 request.Content <- new StringContent(data, Encoding.UTF8, "application/json")
             let task = client.SendAsync(request).Result
+            if task.StatusCode = HttpStatusCode.NotFound then failwith "404"
             let res = task.Content.ReadAsStringAsync().Result
             if res = "" then raise (EmptyString(sprintf "empty string at url %s" url))
             res
@@ -57,7 +58,7 @@ module Download =
                      else raise <| new TimeoutException()
                  with e ->
                      //Console.WriteLine(e)
-                     if !count >= 10 then
+                     if !count >= 5 then
                          Logging.Log.logger (sprintf "Не удалось скачать %s за %d попыток" url (!count + 1))
                          Log.logger e
                          continueLooping <- false

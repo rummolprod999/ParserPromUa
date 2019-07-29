@@ -44,7 +44,7 @@ type ParserPromUa(dir: string) =
                         res <- HttpClientPromUa.DownloadSringPromUa(url)
                         let t = JObject.Parse(res)
                         __.PrepareList(t)
-                  with e -> Log.logger (e, "input string is - ", res)
+                  with e -> Log.logger (e)
             ()
 
 
