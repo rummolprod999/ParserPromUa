@@ -36,7 +36,9 @@ type ParserPromUa(dir: string) =
             __.PrepareList(j)
             let totalItems = GetIntFromJtoken j "data.total_items"
             if totalItems = 0 then failwith "totalItems is zero"
-            let maxpage = totalItems / 20 + 1
+            let mutable maxpage = totalItems / 20 + 1
+            if maxpage > 500 then
+                  maxpage <- 500
             let mutable res = ""
             for i in 2..maxpage do
                   try

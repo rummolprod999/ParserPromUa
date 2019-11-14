@@ -58,7 +58,7 @@ module Download =
                      else raise <| new TimeoutException()
                  with e ->
                      //Console.WriteLine(e)
-                     if !count >= 5 then
+                     if !count >= 2 then
                          Logging.Log.logger (sprintf "Не удалось скачать %s за %d попыток" url (!count + 1))
                          Log.logger e
                          continueLooping <- false
