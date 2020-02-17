@@ -31,7 +31,12 @@ type ParserPromUa(dir: string) =
           | "ok" -> __.StartParsingListTenders j
           | _ -> failwith <| j.ToString()
           ()
-
+      
+      member private __.GetClassifiers() =
+           let starturl = String.Format ("{0}{1}", AbstractParser.EndPoint, "/remote/api/v1/primary_classifier")
+           let res = HttpClientPromUa.DownloadSringPromUa(starturl)
+           printfn "%s" res
+           ()
       member private __.StartParsingListTenders(j: JObject) =
             __.PrepareList(j)
             let totalItems = GetIntFromJtoken j "data.total_items"
